@@ -24,6 +24,8 @@ declare type Preferences = ExtensionPreferences
 declare namespace Preferences {
   /** Preferences accessible in the `review-queue` command */
   export type ReviewQueue = ExtensionPreferences & {}
+  /** Preferences accessible in the `refresh-queue` command */
+  export type RefreshQueue = ExtensionPreferences & {}
   /** Preferences accessible in the `open-wytchr` command */
   export type OpenWytchr = ExtensionPreferences & {}
   /** Preferences accessible in the `add-channel` command */
@@ -37,6 +39,8 @@ declare namespace Preferences {
 declare namespace Arguments {
   /** Arguments passed to the `review-queue` command */
   export type ReviewQueue = {}
+  /** Arguments passed to the `refresh-queue` command */
+  export type RefreshQueue = {}
   /** Arguments passed to the `open-wytchr` command */
   export type OpenWytchr = {}
   /** Arguments passed to the `add-channel` command */

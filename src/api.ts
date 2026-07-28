@@ -1,4 +1,5 @@
-import { getPreferenceValues } from "@raycast/api";
+import { LocalStorage, getPreferenceValues } from "@raycast/api";
+import { QueueVideo, parseBoardVideos } from "./board";
 
 export interface Preferences {
   baseUrl: string;
@@ -108,23 +109,6 @@ export async function addChannel(input: AddChannelInput): Promise<AddChannelResu
   return { name: input.name };
 }
 
-export interface QueueVideo {
-  id: string;
-  title: string;
-  url: string;
-  channel: string;
-  channel_display_name: string;
-  profile: string | null;
-  thumbnail_url: string | null;
-  duration: number | null;
-  upload_date: string | null;
-}
-
-export interface QueueResponse {
-  videos: QueueVideo[];
-  last_polled_at: number | null;
-}
-
 export interface PollStatus {
   running: boolean;
   started_at: number | null;
@@ -132,8 +116,35 @@ export interface PollStatus {
   summary: { channels: number; new_videos: number; errors: string[] } | null;
 }
 
-export async function getQueue(limit = 50): Promise<QueueResponse> {
-  return apiRequest<QueueResponse>(`/api/queue?limit=${limit}`);
+async function apiRequestText(path: string, init?: RequestInit): Promise<string> {
+  const { baseUrl, apiToken } = getConfig();
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (response.status === 401) {
+    throw new Error("Unauthorized — check your API token in extension preferences.");
+  }
+  if (!response.ok) {
+    throw new Error(`${response.status} ${response.statusText}`);
+  }
+  return response.text();
+}
+
+/**
+ * There's no JSON API for the queue, so this reads the same /board HTML
+ * the web UI renders and parses it (see ./board). That keeps the extension
+ * in lockstep with the server's own filtering (hidden channels, shorts,
+ * title include/exclude) instead of a shadow reimplementation that can
+ * drift out of sync whenever the board changes.
+ */
+export async function fetchBoardVideos(): Promise<QueueVideo[]> {
+  const html = await apiRequestText("/board");
+  return parseBoardVideos(html);
 }
 
 export async function triggerPoll(): Promise<void> {
@@ -156,35 +167,46 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const LAST_REFRESHED_KEY = "wytchr.lastRefreshedAt";
+
 /**
- * Fetch the queue, refreshing first if wytchr hasn't polled within
- * `refreshIntervalMinutes`. Triggers /poll/all and waits (bounded) for
- * /poll/status to report done before re-reading the queue.
+ * wytchr doesn't expose when it last polled, so the extension tracks its
+ * own last-triggered time in Raycast's LocalStorage and uses that to decide
+ * whether a refresh is due.
  */
-export async function getQueueFresh(
+async function getLastRefreshedAt(): Promise<number | null> {
+  const raw = await LocalStorage.getItem<string>(LAST_REFRESHED_KEY);
+  return raw ? Number(raw) : null;
+}
+
+/**
+ * Load the current queue, triggering a poll first if it's been more than
+ * `refreshIntervalMinutes` since this extension last triggered one (or
+ * always, when `force` is set). Waits (bounded) for /poll/status to report
+ * done before reading the board.
+ */
+export async function loadQueue(
   refreshIntervalMinutes: number,
-  onStatus?: (status: "cached" | "polling" | "done") => void,
+  onStatus?: (status: "polling" | "done") => void,
   force = false,
-): Promise<QueueResponse> {
-  const initial = await getQueue();
+): Promise<QueueVideo[]> {
+  const lastRefreshedAt = await getLastRefreshedAt();
   const staleMs = refreshIntervalMinutes * 60 * 1000;
-  const isStale = initial.last_polled_at == null || Date.now() - initial.last_polled_at * 1000 > staleMs;
+  const isStale = lastRefreshedAt == null || Date.now() - lastRefreshedAt > staleMs;
 
-  if (!force && !isStale) {
-    onStatus?.("cached");
-    return initial;
+  if (force || isStale) {
+    onStatus?.("polling");
+    await triggerPoll();
+
+    const maxAttempts = 30; // ~60s at 2s intervals
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await sleep(2000);
+      const status = await getPollStatus();
+      if (!status.running) break;
+    }
+    await LocalStorage.setItem(LAST_REFRESHED_KEY, String(Date.now()));
+    onStatus?.("done");
   }
 
-  onStatus?.("polling");
-  await triggerPoll();
-
-  const maxAttempts = 30; // ~60s at 2s intervals
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    await sleep(2000);
-    const status = await getPollStatus();
-    if (!status.running) break;
-  }
-
-  onStatus?.("done");
-  return getQueue();
+  return fetchBoardVideos();
 }

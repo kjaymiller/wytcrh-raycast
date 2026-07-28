@@ -1,0 +1,8 @@
+default_provider = "age"
+
+[providers.age]
+type = "age"
+recipients = ["age1fcxr08twffk5xcc95gy8a5p3casn3n7wgjvlx87kqvgy8u63wqsqrnsxvj"]
+
+[secrets]
+wytchr-key= { provider = "age", value = "YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBjYldpNVhhMXZHeVpkRnZOckJVOWl2WmlhK2lRZ0tVM09zYk9TNGJsMHlrCnNUZGo4RkRaQmo4RnRZL3EwUnI5b3Z5U3BhVWhwVXViUU5tT3U4Ryt2aUEKLT4gNVBjXTt5RXQtZ3JlYXNlClo0eklFNnNlbXBpaAotLS0gT2kwZ1ZJUjhwK3VBM3dsaHorejBEZG1Ba29UZjhzM3d4OUxUYjZOWDNiQQo5GRaQbO8u4G4fP6b2Mis5M3FyC4oVk9pTVV6gurcSXyVXNAnUx2z+Lw4CLZgIY1j2TSH1C+1wSETLtUpvTu25Hz07w4ky4C2PQta4ZZciuxC5PAjbKfRcPprWOtN1lKo=" }

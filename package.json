@@ -16,6 +16,13 @@
       "mode": "view"
     },
     {
+      "name": "refresh-queue",
+      "title": "Refresh Queue",
+      "subtitle": "Wytchr",
+      "description": "Trigger a poll of all channels and wait for it to finish.",
+      "mode": "no-view"
+    },
+    {
       "name": "open-wytchr",
       "title": "Open Wytchr",
       "subtitle": "Wytchr",

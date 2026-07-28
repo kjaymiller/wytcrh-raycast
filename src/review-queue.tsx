@@ -1,51 +1,24 @@
 import { Action, ActionPanel, Icon, List, Toast, showToast, open } from "@raycast/api";
 import { useEffect, useState } from "react";
-import { QueueVideo, getQueueFresh, getRefreshIntervalMinutes, hideVideo, markVideoWatched } from "./api";
-
-function formatDuration(seconds: number | null): string | undefined {
-  if (seconds == null) return undefined;
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
-  const ss = String(s).padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-}
-
-function formatUploadDate(ymd: string | null): Date | undefined {
-  if (!ymd || ymd.length !== 8) return undefined;
-  const year = Number(ymd.slice(0, 4));
-  const month = Number(ymd.slice(4, 6)) - 1;
-  const day = Number(ymd.slice(6, 8));
-  return new Date(year, month, day);
-}
-
-function formatLastPolled(epochSeconds: number | null): string {
-  if (epochSeconds == null) return "never polled";
-  const minutesAgo = Math.round((Date.now() - epochSeconds * 1000) / 60000);
-  if (minutesAgo < 1) return "just now";
-  if (minutesAgo < 60) return `${minutesAgo}m ago`;
-  return `${Math.round(minutesAgo / 60)}h ago`;
-}
+import { getRefreshIntervalMinutes, hideVideo, loadQueue, markVideoWatched } from "./api";
+import { QueueVideo } from "./board";
 
 export default function ReviewQueue() {
   const [videos, setVideos] = useState<QueueVideo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [lastPolledAt, setLastPolledAt] = useState<number | null>(null);
 
   async function load(force = false) {
     setIsLoading(true);
     const toast = await showToast({ style: Toast.Style.Animated, title: "Loading queue…" });
     try {
-      const result = await getQueueFresh(
+      const result = await loadQueue(
         getRefreshIntervalMinutes(),
         (status) => {
           if (status === "polling") toast.title = "Refreshing from YouTube…";
         },
         force,
       );
-      setVideos(result.videos);
-      setLastPolledAt(result.last_polled_at);
+      setVideos(result);
       toast.hide();
     } catch (error) {
       toast.style = Toast.Style.Failure;
@@ -87,17 +60,17 @@ export default function ReviewQueue() {
   }
 
   return (
-    <List isLoading={isLoading} navigationTitle={`Queue — last polled ${formatLastPolled(lastPolledAt)}`}>
+    <List isLoading={isLoading} navigationTitle="Queue">
       {videos.map((video) => (
         <List.Item
           key={video.id}
           title={video.title}
-          subtitle={video.channel_display_name}
-          icon={video.thumbnail_url ? { source: video.thumbnail_url } : Icon.Video}
+          subtitle={video.channelDisplayName}
+          icon={video.thumbnailUrl ? { source: video.thumbnailUrl } : Icon.Video}
           accessories={[
             ...(video.profile ? [{ tag: video.profile }] : []),
-            { text: formatDuration(video.duration) },
-            { date: formatUploadDate(video.upload_date) },
+            { text: video.duration ?? undefined },
+            { date: video.uploadDate ?? undefined },
           ]}
           actions={
             <ActionPanel>

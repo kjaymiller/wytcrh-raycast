@@ -5,6 +5,7 @@ Add YouTube channels to your self-hosted [wytchr](https://github.com/kjaymiller/
 ## Commands
 
 - **Review Queue** — browse the latest "new" videos across all your channels. If wytchr hasn't polled within your configured **Refresh Interval**, it triggers a background poll and waits for it to finish before showing results. Mark videos watched, hide them, or open them, right from the list.
+- **Refresh Queue** — a one-shot command that triggers a poll of all channels immediately (regardless of the **Refresh Interval**) and reports how many videos are now in the queue — the same total shown on the homepage — not just how many were newly discovered by that poll. Useful for a quick check without opening the list view.
 - **Add Channel** — a form to add a channel with an optional name override, profile, and a favorites flag. Prefills the URL from your active browser tab (falling back to a URL on the clipboard).
 - **Add Active Tab Channel** — a one-shot command that adds the channel from the current browser tab immediately. Accepts an optional **profile** argument typed right in the root search.
 - **Add Channel from Clipboard** — a one-shot command that grabs an `http(s)` URL from the clipboard and adds it immediately. Also accepts an optional **profile** argument.
@@ -32,14 +33,20 @@ Open the extension preferences and set:
 
 ## How it works
 
-**Review Queue** reads `GET /api/queue`, a small JSON endpoint added to wytchr
-alongside its HTML board (`app.py`) — it returns the same "new" videos the
-board shows, honoring each channel's hide/shorts/title filters, plus the most
-recent `last_polled_at` across channels. If that timestamp is older than the
-**Refresh Interval** preference, the command calls `POST /poll/all` (the same
-endpoint the web board's manual refresh uses) and polls `GET /poll/status`
-until the run finishes before re-reading the queue. Marking a video watched or
-hidden calls `POST /videos/<id>/watched` / `.../hide`.
+wytchr has no JSON API for the queue, so **Review Queue** and **Refresh
+Queue** read `GET /board` — the same HTML the web UI itself renders — and
+parse the video cards out of it (see `src/board.ts`). That keeps the
+extension in lockstep with the server's own filtering (hidden channels,
+shorts, title include/exclude) instead of a shadow reimplementation that
+would drift out of sync every time the board template changes.
+
+Since wytchr doesn't expose when it last polled either, the extension tracks
+its own last-triggered time in Raycast's local storage. If more than your
+**Refresh Interval** has passed since the extension last triggered a poll (or
+always, for **Refresh Queue**), it calls `POST /poll/all` (the same endpoint
+the web board's manual refresh uses) and polls `GET /poll/status` until the
+run finishes before reading the board. Marking a video watched or hidden
+calls `POST /videos/<id>/watched` / `.../hide`.
 
 The add-channel commands `POST /channels/add` on your instance, the same
 endpoint the wytchr web UI's "Add Channel" form uses. wytchr resolves the URL —
