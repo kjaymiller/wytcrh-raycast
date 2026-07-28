@@ -1,0 +1,118 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "wytchr",
+  "title": "Wytchr",
+  "description": "Add YouTube channels to your self-hosted wytchr instance.",
+  "icon": "extension-icon.png",
+  "author": "kjaymiller",
+  "categories": ["Web", "Productivity", "Media"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "review-queue",
+      "title": "Review Queue",
+      "subtitle": "Wytchr",
+      "description": "Browse the latest videos in your wytchr queue, refreshing from YouTube if stale.",
+      "mode": "view"
+    },
+    {
+      "name": "open-wytchr",
+      "title": "Open Wytchr",
+      "subtitle": "Wytchr",
+      "description": "Open your wytchr instance in the browser.",
+      "mode": "no-view"
+    },
+    {
+      "name": "add-channel",
+      "title": "Add Channel",
+      "subtitle": "Wytchr",
+      "description": "Add a YouTube channel to wytchr with an optional name, profile, and favorites flag.",
+      "mode": "view"
+    },
+    {
+      "name": "add-active-tab",
+      "title": "Add Active Tab Channel",
+      "subtitle": "Wytchr",
+      "description": "Add the channel from the active browser tab to wytchr.",
+      "mode": "no-view",
+      "arguments": [
+        {
+          "name": "profile",
+          "placeholder": "profile (e.g. tech)",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "add-clipboard",
+      "title": "Add Channel from Clipboard",
+      "subtitle": "Wytchr",
+      "description": "Read a channel URL from the clipboard and add it to wytchr.",
+      "mode": "no-view",
+      "arguments": [
+        {
+          "name": "profile",
+          "placeholder": "profile (e.g. tech)",
+          "type": "text",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "preferences": [
+    {
+      "name": "baseUrl",
+      "title": "Instance URL",
+      "description": "Base URL of your self-hosted wytchr instance.",
+      "type": "textfield",
+      "required": true,
+      "placeholder": "https://wytchr.example.com"
+    },
+    {
+      "name": "apiToken",
+      "title": "API Token",
+      "description": "Sent as an Authorization: Bearer token. Matches wytchr's API_TOKEN env var.",
+      "type": "password",
+      "required": true,
+      "placeholder": "your api token"
+    },
+    {
+      "name": "defaultProfile",
+      "title": "Default Profile",
+      "description": "Profile/preset label applied when none is specified.",
+      "type": "textfield",
+      "required": false,
+      "default": "",
+      "placeholder": "tech"
+    },
+    {
+      "name": "refreshIntervalMinutes",
+      "title": "Refresh Interval (Minutes)",
+      "description": "Review Queue triggers a background poll if wytchr hasn't refreshed within this many minutes.",
+      "type": "textfield",
+      "required": false,
+      "default": "60",
+      "placeholder": "60"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.83.0",
+    "@raycast/utils": "^1.17.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "^22.0.0",
+    "@types/react": "19.0.10",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
